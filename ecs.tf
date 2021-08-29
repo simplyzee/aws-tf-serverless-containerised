@@ -1,3 +1,6 @@
+# use existing VPCs and subnets that already exist. 
+# note: in a production environment, we'd manage our own topologies.
+
 data "aws_vpc" "default" {
   default = true
 }
@@ -6,6 +9,7 @@ data "aws_subnet_ids" "all" {
   vpc_id = data.aws_vpc.default.id
 }
 
+# Use an open source module that has already predefined the resources for creating an alb
 module "alb" {
   source  = "umotif-public/alb/aws"
   version = "~> 2.0"
@@ -17,6 +21,7 @@ module "alb" {
   subnets            = data.aws_subnet_ids.all.ids
 }
 
+# Create LB listenders for the ALB
 resource "aws_lb_listener" "alb_listen_port_80" {
   load_balancer_arn = module.alb.arn
   port              = "80"
@@ -28,6 +33,7 @@ resource "aws_lb_listener" "alb_listen_port_80" {
   }
 }
 
+# Create Security Groups to ALLOW ALL access
 resource "aws_security_group_rule" "alb_ingress_80" {
   security_group_id = module.alb.security_group_id
   type              = "ingress"
@@ -38,6 +44,7 @@ resource "aws_security_group_rule" "alb_ingress_80" {
   ipv6_cidr_blocks  = ["::/0"]
 }
 
+# Give the ALB access to the ECS task in port 80
 resource "aws_security_group_rule" "task_ingress_80" {
   security_group_id        = module.ecs-fargate.service_sg_id
   type                     = "ingress"
@@ -46,6 +53,8 @@ resource "aws_security_group_rule" "task_ingress_80" {
   to_port                  = 80
   source_security_group_id = module.alb.security_group_id
 }
+
+# Create ECS cluster with fargate spot instances
 
 resource "aws_ecs_cluster" "cluster" {
   name = "non-negative-ecs-clustr"
@@ -62,6 +71,7 @@ resource "aws_ecs_cluster" "cluster" {
   }
 }
 
+# Use an open source fargate module that has all the resources predefined e.g. IAM roles, creation of ECS tasks etc.
 module "ecs-fargate" {
   source = "umotif-public/ecs-fargate/aws"
   version = "~> 6.1.0"
@@ -84,6 +94,7 @@ module "ecs-fargate" {
     }
   ]
 
+  # Health check endpoint is defined on / and just returns 200
   health_check = {
     port = "traffic-port"
     path = "/"
