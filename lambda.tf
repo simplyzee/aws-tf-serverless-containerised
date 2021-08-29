@@ -48,7 +48,31 @@ resource "aws_lambda_function" "csv_importer" {
     variables = {
       BucketName : aws_s3_bucket.csv_premier_league.bucket,
       FileName : "premier_league.csv",
-      DynamoDBTableName : ""
+      DynamoDBTableName : aws_dynamodb_table.premier_league.name
     }
+  }
+}
+
+resource "aws_dynamodb_table" "premier_league" {
+  name = "PremierLeague"
+  read_capacity  = 20
+  write_capacity = 20
+
+  hash_key       = "Date"
+  range_key      = "HomeTeam"
+
+  attribute {
+    name = "Date"
+    type = "N"
+  }
+
+  attribute {
+    name = "HomeTeam"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "dynamodb-table-premier-league"
+    Environment = "Development"
   }
 }
