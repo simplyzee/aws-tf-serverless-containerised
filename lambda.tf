@@ -1,3 +1,4 @@
+# Create S3 Bucket for storing CSV
 resource "aws_s3_bucket" "csv_cities" {
   bucket = "csv-cities-example-bucket"
   acl    = "private"
@@ -7,6 +8,8 @@ resource "aws_s3_bucket" "csv_cities" {
     Environment = "Development"
   }
 }
+
+# Use open source module for easier management of lambda function
 
 module "lambda_function_externally_managed_package" {
   source = "terraform-aws-modules/lambda/aws"
@@ -30,12 +33,9 @@ module "lambda_function_externally_managed_package" {
   }
 }
 
-variable "csv_importer_filename" {
-  default = "csv_importer.zip"
-}
-
-resource "aws_dynamodb_table" "premier_league" {
-  name = "PremierLeague"
+# Create DynamoDB table 
+resource "aws_dynamodb_table" "cities" {
+  name = "Cities"
   read_capacity  = 20
   write_capacity = 20
 
@@ -53,7 +53,7 @@ resource "aws_dynamodb_table" "premier_league" {
   }
 
   tags = {
-    Name        = "dynamodb-table-premier-league"
+    Name        = "dynamodb-table-cities"
     Environment = "Development"
   }
 }
